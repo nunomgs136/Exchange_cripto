@@ -19,16 +19,30 @@ import view.Comprar;
 public class ControllerCompra {
     private Connection conn;
     private UsuarioDAO dao = new UsuarioDAO(conn);
+    private double novoSaldoReais, novoSaldoBit, novoSaldoRipple, novoSaldoEthereum;
     public ControllerCompra(Comprar view){
         this.view = view;
         
     }
     private Comprar view = new Comprar();
+        public void printCotacao() throws SQLException{
+            
+            ResultSet res = dao.consultarCotacao();
+            Conexao conexao = new Conexao();
+            if(res.next()){
+                   String cotaBit = res.getString("cotabitcoin");
+                   String cotaRipple = res.getString("cotaripple");
+                   String cotaEthereum = res.getString("cotaethereum");
+                   view.getLblBitcoin().setText("Bitcoin: " + cotaBit);
+                   view.getLblRipple().setText("Ripple: " + cotaRipple);
+                   view.getLblEthereum().setText("Ethereum: " + cotaEthereum);
+            }
+        }
         public void atualizar(String id, int CB, int CR, int CE) throws SQLException{
-        int saque = Integer.parseInt(view.getTxtBitcoin().getText());
+        double saque;
+        double novoSaldoBit;
+        int resultado = 0;
         ResultSet res = dao.consultarCarteira(Integer.parseInt(id));
-       
-        
         Conexao conexao = new Conexao();
         try{
             if(res.next()){
@@ -40,18 +54,48 @@ public class ControllerCompra {
                        saldoRipple, saldoEthereum, Integer.parseInt(id), null, null);
                res = dao.consultarCotacao();
                if(res.next()){
-                   String cotabit = res.getString("cotareais");
-                   String cotaripple = res.getString("cotaripple");
-                   String cotaethereum = res.getString("cotaethereum");
-                int novoSaldoReais = Integer.valueOf(saldo) - (saque*Integer.valueOf(cotabit));
-                int novoSaldoBit = Integer.valueOf(saldoBit) + saque;
-               if(novoSaldoReais >= 0){
-            carteira.setReais(Integer.toString(novoSaldoReais));
-            carteira.setBit(Integer.toString(novoSaldoBit));
+                   String cotaBit = res.getString("cotabitcoin");
+                   String cotaRipple = res.getString("cotaripple");
+                   String cotaEthereum = res.getString("cotaethereum");
+                if(CB == 1){
+                saque = Double.valueOf(view.getTxtBitcoin().getText());
+                novoSaldoReais = Double.valueOf(saldo) - (saque*Double.valueOf(cotaBit)*1.02);
+                novoSaldoBit = Double.valueOf(saldoBit) + saque;
+                    if(novoSaldoReais >= 0){
+                        carteira.setReais(Double.toString(novoSaldoReais));
+                        carteira.setBit(Double.toString(novoSaldoBit));
+                        resultado = 1;
+                    }
+                }if(CR == 1){
+                    saque = Double.valueOf(view.getTxtRipple().getText());
+                    novoSaldoReais = Double.valueOf(saldo) - (saque*Double.valueOf(cotaRipple)*1.01);
+                    novoSaldoRipple = Double.valueOf(saldoRipple) + saque;
+                    if(novoSaldoReais >= 0){
+                        carteira.setReais(Double.toString(novoSaldoReais));
+                        carteira.setRipple(Double.toString(novoSaldoRipple));
+                        resultado = 1;
+                    }
+                }if(CE == 1){
+                     saque = Double.valueOf(view.getTxtEthereum().getText());
+                     novoSaldoReais = Double.valueOf(saldo) - (saque*Double.valueOf(cotaEthereum)*1.01);
+                     novoSaldoEthereum = Double.valueOf(saldoEthereum) + saque;
+                        if(novoSaldoReais >= 0){
+                        carteira.setReais(Double.toString(novoSaldoReais));
+                        carteira.setEth(Double.toString(novoSaldoEthereum));
+                        resultado = 1;
+                    }
+                }
+                
+
+             if(resultado == 1){
+
             Connection conn = conexao.getConnection();
             UsuarioDAO dao = new UsuarioDAO(conn);
             dao.atualizarSaldo(Integer.parseInt(id),carteira);
-             JOptionPane.showMessageDialog(view, "Saldo atual: " + carteira.getReais());
+             JOptionPane.showMessageDialog(view, "Saldo atual: " + carteira.getReais()
+                     + "\n" + "Saldo de Bitcoin: " + carteira.getBit() + "\n" + 
+                     "Saldo de Ripple: " + carteira.getRipple() + "\n" + 
+                     "Saldo de Ethereum: " + carteira.getEth());
                }else{
                    JOptionPane.showMessageDialog(view, "Fundos insuficientes!");
                }
@@ -63,6 +107,7 @@ public class ControllerCompra {
 
         }catch(SQLException e){
              JOptionPane.showMessageDialog(view, "Falha de conexão!");
+             System.out.println(e);
         }
         
     }    
